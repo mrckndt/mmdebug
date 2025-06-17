@@ -17,9 +17,10 @@ type SysctlConfig struct {
 }
 
 type UlimitConfig struct {
-	Resource int
-	Name     string
-	Expected uint64
+	Resource     int
+	Name         string
+	ExpectedSoft uint64
+	ExpectedHard uint64
 }
 
 type sysctlInfo struct {
@@ -33,7 +34,8 @@ type ulimitInfo struct {
 	resourceName string
 	softLimit    uint64
 	hardLimit    uint64
-	expected     uint64
+	expectedSoft uint64
+	expectedHard uint64
 }
 
 // SystemChecker - stub for non-Linux systems

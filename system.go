@@ -28,9 +28,10 @@ type SysctlConfig struct {
 }
 
 type UlimitConfig struct {
-	Resource int
-	Name     string
-	Expected uint64
+	Resource     int
+	Name         string
+	ExpectedSoft uint64
+	ExpectedHard uint64
 }
 
 type sysctlInfo struct {
@@ -44,7 +45,8 @@ type ulimitInfo struct {
 	resourceName string
 	softLimit    uint64
 	hardLimit    uint64
-	expected     uint64
+	expectedSoft uint64
+	expectedHard uint64
 }
 
 // SystemChecker - simplified single class for all operations
@@ -93,8 +95,8 @@ func defaultSysctlConfigs() []SysctlConfig {
 
 func defaultUlimitConfigs() []UlimitConfig {
 	return []UlimitConfig{
-		{unix.RLIMIT_NOFILE, "nofile", 65536},
-		{unix.RLIMIT_NPROC, "nproc", 8192},
+		{unix.RLIMIT_NOFILE, "nofile", 65536, 65536},
+		{unix.RLIMIT_NPROC, "nproc", 8192, 8192},
 	}
 }
 
@@ -244,7 +246,8 @@ func (s *SystemChecker) GetUlimits() ([]ulimitInfo, error) {
 			resourceName: config.Name,
 			softLimit:    limit.Cur,
 			hardLimit:    limit.Max,
-			expected:     config.Expected,
+			expectedSoft: config.ExpectedSoft,
+			expectedHard: config.ExpectedHard,
 		})
 	}
 
@@ -377,23 +380,43 @@ func (s *SystemChecker) PrintUlimits() error {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.AppendHeader(table.Row{"Resource", "Expected", "Actual", "Status"})
+	t.AppendHeader(table.Row{"Resource", "Type", "Expected", "Actual", "Status"})
 
 	for _, limit := range ulimits {
-		actualValue := formatUlimitValue(limit.softLimit)
-		matches := limit.softLimit >= limit.expected || limit.softLimit == unix.RLIM_INFINITY
-		status := text.FgRed.Sprint("FAIL")
-		actual := text.FgRed.Sprint(actualValue)
-		if matches {
-			status = text.FgGreen.Sprint("OK")
-			actual = text.FgGreen.Sprint(actualValue)
+		// Soft limit row
+		softActual := formatUlimitValue(limit.softLimit)
+		softMatches := limit.softLimit >= limit.expectedSoft || limit.softLimit == unix.RLIM_INFINITY
+		softStatus := text.FgRed.Sprint("FAIL")
+		softActualColored := text.FgRed.Sprint(softActual)
+		if softMatches {
+			softStatus = text.FgGreen.Sprint("OK")
+			softActualColored = text.FgGreen.Sprint(softActual)
 		}
 
 		t.AppendRow(table.Row{
 			limit.resourceName,
-			limit.expected,
-			actual,
-			status,
+			"soft",
+			limit.expectedSoft,
+			softActualColored,
+			softStatus,
+		})
+
+		// Hard limit row
+		hardActual := formatUlimitValue(limit.hardLimit)
+		hardMatches := limit.hardLimit >= limit.expectedHard || limit.hardLimit == unix.RLIM_INFINITY
+		hardStatus := text.FgRed.Sprint("FAIL")
+		hardActualColored := text.FgRed.Sprint(hardActual)
+		if hardMatches {
+			hardStatus = text.FgGreen.Sprint("OK")
+			hardActualColored = text.FgGreen.Sprint(hardActual)
+		}
+
+		t.AppendRow(table.Row{
+			limit.resourceName,
+			"hard",
+			limit.expectedHard,
+			hardActualColored,
+			hardStatus,
 		})
 	}
 
