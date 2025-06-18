@@ -33,7 +33,6 @@ func main() {
 			os.Exit(1)
 		}
 
-
 	case "tls":
 		result := testTLSHandshake(*host, *port, *timeout)
 		printTLSResult(result, *host, *port)
@@ -81,7 +80,7 @@ func main() {
 		}
 
 	case "mm-env":
-		err := PrintMattermostEnvironmentVariables()
+		err := PrintMattermostEnv()
 		if err != nil {
 			fmt.Printf("Failed to get Mattermost environment variables: %v\n", err)
 			os.Exit(1)

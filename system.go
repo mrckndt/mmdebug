@@ -19,6 +19,11 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// TODO: Review if timeouts/context are needed for system operations
+// Current 30-second timeouts might be overkill for local filesystem reads.
+// Consider simplifying by removing context/timeout handling if operations
+// are fast enough and don't benefit from cancellation.
+
 
 // Core data structures
 type SysctlConfig struct {
@@ -47,27 +52,6 @@ type ulimitInfo struct {
 	hardLimit    uint64
 	expectedSoft uint64
 	expectedHard uint64
-}
-
-// SystemChecker - simplified single class for all operations
-type SystemChecker struct {
-	timeout time.Duration
-	verbose bool
-}
-
-// NewSystemChecker creates a checker with optional timeout
-func NewSystemChecker(timeout time.Duration, verbose bool) *SystemChecker {
-	if timeout == 0 {
-		timeout = 10 * time.Second
-	}
-	return &SystemChecker{timeout: timeout, verbose: verbose}
-}
-
-// log writes to stderr if verbose mode is enabled
-func (s *SystemChecker) log(format string, args ...interface{}) {
-	if s.verbose {
-		fmt.Fprintf(os.Stderr, format+"\n", args...)
-	}
 }
 
 // Default configurations
@@ -101,7 +85,7 @@ func defaultUlimitConfigs() []UlimitConfig {
 }
 
 // readSysctl reads a sysctl value with timeout
-func (s *SystemChecker) readSysctl(ctx context.Context, name string) (string, error) {
+func readSysctl(ctx context.Context, name string) (string, error) {
 	if name == "" {
 		return "", fmt.Errorf("empty parameter name")
 	}
@@ -178,21 +162,23 @@ func compareSysctl(expected, actual string) bool {
 	for i := 0; i < len(expectedFields); i++ {
 		exp, err1 := strconv.Atoi(expectedFields[i])
 		act, err2 := strconv.Atoi(actualFields[i])
-		
+
 		if err1 != nil || err2 != nil {
 			return false // Fall back to string comparison, which already failed
 		}
-		
+
 		if act < exp {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
 // GetSysctls retrieves and validates sysctl parameters
-func (s *SystemChecker) GetSysctls(ctx context.Context) ([]sysctlInfo, error) {
+func GetSysctls() ([]sysctlInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	if runtime.GOOS != "linux" {
 		return nil, fmt.Errorf("sysctl only supported on Linux")
 	}
@@ -200,12 +186,10 @@ func (s *SystemChecker) GetSysctls(ctx context.Context) ([]sysctlInfo, error) {
 	configs := defaultSysctlConfigs()
 	results := make([]sysctlInfo, 0, len(configs))
 
-	s.log("Checking %d sysctl parameters", len(configs))
 
 	for _, config := range configs {
-		actual, err := s.readSysctl(ctx, config.Name)
+		actual, err := readSysctl(ctx, config.Name)
 		if err != nil {
-			s.log("Failed to read %s: %v", config.Name, err)
 			actual = "not found"
 		}
 
@@ -225,7 +209,7 @@ func (s *SystemChecker) GetSysctls(ctx context.Context) ([]sysctlInfo, error) {
 }
 
 // GetUlimits retrieves and validates ulimit information
-func (s *SystemChecker) GetUlimits() ([]ulimitInfo, error) {
+func GetUlimits() ([]ulimitInfo, error) {
 	if runtime.GOOS != "linux" {
 		return nil, fmt.Errorf("ulimits only supported on Linux")
 	}
@@ -233,12 +217,10 @@ func (s *SystemChecker) GetUlimits() ([]ulimitInfo, error) {
 	configs := defaultUlimitConfigs()
 	results := make([]ulimitInfo, 0, len(configs))
 
-	s.log("Checking %d ulimit resources", len(configs))
 
 	for _, config := range configs {
 		var limit syscall.Rlimit
 		if err := syscall.Getrlimit(config.Resource, &limit); err != nil {
-			s.log("Failed to get %s: %v", config.Name, err)
 			continue
 		}
 
@@ -255,8 +237,10 @@ func (s *SystemChecker) GetUlimits() ([]ulimitInfo, error) {
 }
 
 // GetMattermostEnv gets Mattermost environment variables
-func (s *SystemChecker) GetMattermostEnv(ctx context.Context) ([]string, error) {
-	proc, err := s.findMattermostProcess(ctx)
+func GetMattermostEnv() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	proc, err := findMattermostProcess(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +266,7 @@ func (s *SystemChecker) GetMattermostEnv(ctx context.Context) ([]string, error) 
 }
 
 // findMattermostProcess finds the mattermost process
-func (s *SystemChecker) findMattermostProcess(ctx context.Context) (*procfs.Proc, error) {
+func findMattermostProcess(ctx context.Context) (*procfs.Proc, error) {
 	done := make(chan struct {
 		proc *procfs.Proc
 		err  error
@@ -340,8 +324,8 @@ func formatUlimitValue(value uint64) string {
 }
 
 // Print functions
-func (s *SystemChecker) PrintSysctls(ctx context.Context) error {
-	sysctls, err := s.GetSysctls(ctx)
+func PrintSysctls() error {
+	sysctls, err := GetSysctls()
 	if err != nil {
 		return err
 	}
@@ -372,8 +356,8 @@ func (s *SystemChecker) PrintSysctls(ctx context.Context) error {
 	return nil
 }
 
-func (s *SystemChecker) PrintUlimits() error {
-	ulimits, err := s.GetUlimits()
+func PrintUlimits() error {
+	ulimits, err := GetUlimits()
 	if err != nil {
 		return err
 	}
@@ -427,8 +411,8 @@ func (s *SystemChecker) PrintUlimits() error {
 	return nil
 }
 
-func (s *SystemChecker) PrintMattermostEnv(ctx context.Context) error {
-	envVars, err := s.GetMattermostEnv(ctx)
+func PrintMattermostEnv() error {
+	envVars, err := GetMattermostEnv()
 	if err != nil {
 		return err
 	}
@@ -455,49 +439,3 @@ func (s *SystemChecker) PrintMattermostEnv(ctx context.Context) error {
 	return nil
 }
 
-// Legacy functions for backward compatibility
-func GetMattermostEnvironmentVariables() ([]string, error) {
-	checker := NewSystemChecker(30*time.Second, false)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	return checker.GetMattermostEnv(ctx)
-}
-
-func GetSysctls() ([]sysctlInfo, error) {
-	checker := NewSystemChecker(10*time.Second, false)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return checker.GetSysctls(ctx)
-}
-
-func GetSysctlsWithConfig(configs []SysctlConfig) ([]sysctlInfo, error) {
-	return GetSysctls() // Simplified - ignores custom configs for now
-}
-
-func GetUlimits() ([]ulimitInfo, error) {
-	checker := NewSystemChecker(10*time.Second, false)
-	return checker.GetUlimits()
-}
-
-func GetUlimitsWithConfig(configs []UlimitConfig) ([]ulimitInfo, error) {
-	return GetUlimits() // Simplified - ignores custom configs for now
-}
-
-func PrintSysctls() error {
-	checker := NewSystemChecker(10*time.Second, false)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return checker.PrintSysctls(ctx)
-}
-
-func PrintUlimits() error {
-	checker := NewSystemChecker(10*time.Second, false)
-	return checker.PrintUlimits()
-}
-
-func PrintMattermostEnvironmentVariables() error {
-	checker := NewSystemChecker(30*time.Second, false)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	return checker.PrintMattermostEnv(ctx)
-}
