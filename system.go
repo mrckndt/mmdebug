@@ -351,11 +351,11 @@ func (s *SystemChecker) PrintSysctls(ctx context.Context) error {
 	t.AppendHeader(table.Row{"Parameter", "Expected", "Actual", "Status"})
 
 	for _, sysctl := range sysctls {
-		status := text.FgRed.Sprint("FAIL")
-		actual := text.FgRed.Sprint(sysctl.actual)
+		status := text.Colors{text.Bold, text.FgRed}.Sprint("FAIL")
+		actual := text.Colors{text.Bold, text.FgRed}.Sprint(sysctl.actual)
 		if sysctl.matches {
-			status = text.FgGreen.Sprint("OK")
-			actual = text.FgGreen.Sprint(sysctl.actual)
+			status = text.Colors{text.Bold, text.FgGreen}.Sprint("OK")
+			actual = text.Colors{text.Bold, text.FgGreen}.Sprint(sysctl.actual)
 		}
 		t.AppendRow(table.Row{
 			sysctl.name,
@@ -386,11 +386,11 @@ func (s *SystemChecker) PrintUlimits() error {
 		// Soft limit row
 		softActual := formatUlimitValue(limit.softLimit)
 		softMatches := limit.softLimit >= limit.expectedSoft || limit.softLimit == unix.RLIM_INFINITY
-		softStatus := text.FgRed.Sprint("FAIL")
-		softActualColored := text.FgRed.Sprint(softActual)
+		softStatus := text.Colors{text.Bold, text.FgRed}.Sprint("FAIL")
+		softActualColored := text.Colors{text.Bold, text.FgRed}.Sprint(softActual)
 		if softMatches {
-			softStatus = text.FgGreen.Sprint("OK")
-			softActualColored = text.FgGreen.Sprint(softActual)
+			softStatus = text.Colors{text.Bold, text.FgGreen}.Sprint("OK")
+			softActualColored = text.Colors{text.Bold, text.FgGreen}.Sprint(softActual)
 		}
 
 		t.AppendRow(table.Row{
@@ -404,11 +404,11 @@ func (s *SystemChecker) PrintUlimits() error {
 		// Hard limit row
 		hardActual := formatUlimitValue(limit.hardLimit)
 		hardMatches := limit.hardLimit >= limit.expectedHard || limit.hardLimit == unix.RLIM_INFINITY
-		hardStatus := text.FgRed.Sprint("FAIL")
-		hardActualColored := text.FgRed.Sprint(hardActual)
+		hardStatus := text.Colors{text.Bold, text.FgRed}.Sprint("FAIL")
+		hardActualColored := text.Colors{text.Bold, text.FgRed}.Sprint(hardActual)
 		if hardMatches {
-			hardStatus = text.FgGreen.Sprint("OK")
-			hardActualColored = text.FgGreen.Sprint(hardActual)
+			hardStatus = text.Colors{text.Bold, text.FgGreen}.Sprint("OK")
+			hardActualColored = text.Colors{text.Bold, text.FgGreen}.Sprint(hardActual)
 		}
 
 		t.AppendRow(table.Row{
