@@ -80,7 +80,7 @@ func main() {
 		}
 
 	case "mm-env":
-		err := PrintMattermostEnv()
+		err := PrintMattermostProcessEnv()
 		if err != nil {
 			fmt.Printf("Failed to get Mattermost environment variables: %v\n", err)
 			os.Exit(1)

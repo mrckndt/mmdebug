@@ -45,7 +45,7 @@ func GetUlimits() ([]ulimitInfo, error) {
 	return nil, fmt.Errorf("ulimits are only supported on Linux, current OS: %s", runtime.GOOS)
 }
 
-func GetMattermostEnv() ([]string, error) {
+func GetMattermostProcessEnv() ([]string, error) {
 	return nil, fmt.Errorf("reading Mattermost process environment variables is only supported on Linux, current OS: %s", runtime.GOOS)
 }
 
@@ -57,7 +57,7 @@ func PrintUlimits() error {
 	return fmt.Errorf("ulimits are only supported on Linux, current OS: %s", runtime.GOOS)
 }
 
-func PrintMattermostEnv() error {
+func PrintMattermostProcessEnv() error {
 	return fmt.Errorf("reading Mattermost process environment variables is only supported on Linux, current OS: %s", runtime.GOOS)
 }
 

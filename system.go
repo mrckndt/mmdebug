@@ -235,8 +235,8 @@ func GetUlimits() ([]ulimitInfo, error) {
 	return results, nil
 }
 
-// GetMattermostEnv gets Mattermost environment variables
-func GetMattermostEnv() ([]string, error) {
+// GetMattermostProcessEnv gets Mattermost process environment variables
+func GetMattermostProcessEnv() ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	proc, err := findMattermostProcess(ctx)
@@ -349,7 +349,7 @@ func PrintSysctls() error {
 	}
 
 	t.SetStyle(table.StyleDefault)
-	fmt.Println("Sysctl Parameters:")
+	fmt.Printf("%s\n", text.Colors{text.Bold}.Sprint("Sysctl Parameters:"))
 	t.Render()
 
 	return nil
@@ -404,14 +404,14 @@ func PrintUlimits() error {
 	}
 
 	t.SetStyle(table.StyleDefault)
-	fmt.Println("Resource Limits:")
+	fmt.Printf("%s\n", text.Colors{text.Bold}.Sprint("Resource Limits:"))
 	t.Render()
 
 	return nil
 }
 
-func PrintMattermostEnv() error {
-	envVars, err := GetMattermostEnv()
+func PrintMattermostProcessEnv() error {
+	envVars, err := GetMattermostProcessEnv()
 	if err != nil {
 		return err
 	}
@@ -432,7 +432,7 @@ func PrintMattermostEnv() error {
 	}
 
 	t.SetStyle(table.StyleDefault)
-	fmt.Printf("Mattermost Environment Variables (%d total):\n", len(envVars))
+	fmt.Printf("%s\n", text.Colors{text.Bold}.Sprintf("Mattermost Process Environment Variables (%d total):", len(envVars)))
 	t.Render()
 
 	return nil
