@@ -13,7 +13,7 @@ func main() {
 		host    = flag.String("host", "", "Host to connect to")
 		port    = flag.Int("port", 443, "Port to connect to")
 		timeout = flag.Duration("timeout", 10*time.Second, "Connection timeout")
-		mode    = flag.String("mode", "tcp", "Test mode: tcp, udp, tls, tls-insecure, tls-postgres, tls-ldap, ulimits, mm-env, sysctl")
+		mode    = flag.String("mode", "tcp", "Test mode: tcp, tls, tls-insecure, tls-sni, tls-postgres, tls-ldap, ulimits, mm-env, sysctl")
 		sni     = flag.String("sni", "", "Custom SNI for TLS connections")
 	)
 
@@ -28,39 +28,11 @@ func main() {
 	switch strings.ToLower(*mode) {
 	case "tcp":
 		err := testTCPConnection(*host, *port, *timeout)
+		printTCPResult(*host, *port, err)
 		if err != nil {
-			fmt.Printf("TCP connection failed: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("TCP connection to %s:%d successful\n", *host, *port)
 
-	case "udp":
-		err := testUDPConnection(*host, *port, *timeout)
-		if err != nil {
-			fmt.Printf("UDP connection failed: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("UDP connection to %s:%d successful\n", *host, *port)
-
-	case "both":
-		tcpErr, udpErr := testConnection(*host, *port, *timeout)
-		fmt.Printf("TCP connection to %s:%d: ", *host, *port)
-		if tcpErr != nil {
-			fmt.Printf("FAILED (%v)\n", tcpErr)
-		} else {
-			fmt.Printf("SUCCESS\n")
-		}
-
-		fmt.Printf("UDP connection to %s:%d: ", *host, *port)
-		if udpErr != nil {
-			fmt.Printf("FAILED (%v)\n", udpErr)
-		} else {
-			fmt.Printf("SUCCESS\n")
-		}
-
-		if tcpErr != nil && udpErr != nil {
-			os.Exit(1)
-		}
 
 	case "tls":
 		result := testTLSHandshake(*host, *port, *timeout)
@@ -124,7 +96,7 @@ func main() {
 
 	default:
 		fmt.Fprintf(os.Stderr, "Error: unknown mode '%s'\n", *mode)
-		fmt.Fprintf(os.Stderr, "Available modes: tcp, udp, both, tls, tls-insecure, tls-sni, tls-postgres, tls-ldap, ulimits, mm-env, sysctl\n")
+		fmt.Fprintf(os.Stderr, "Available modes: tcp, tls, tls-insecure, tls-sni, tls-postgres, tls-ldap, ulimits, mm-env, sysctl\n")
 		os.Exit(1)
 	}
 }

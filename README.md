@@ -4,7 +4,7 @@ A Go-based network debugging and system diagnostics tool for Mattermost environm
 
 ## Features
 
-- **Network Connectivity Testing**: TCP and UDP connection testing
+- **Network Connectivity Testing**: TCP connection testing
 - **TLS/SSL Analysis**: Comprehensive TLS handshake testing with detailed certificate information
 - **System Diagnostics**: System limits, environment variables, and kernel parameters
 - **Cross-Platform**: Supports Linux, macOS, and other Unix-like systems
@@ -26,12 +26,6 @@ GOOS=linux GOARCH=amd64 go build -o mmdebug-linux-amd64 .
 ```bash
 # Test TCP connection
 ./mmdebug -host example.com -port 443 -mode tcp
-
-# Test UDP connection
-./mmdebug -host example.com -port 53 -mode udp
-
-# Test both TCP and UDP
-./mmdebug -host example.com -port 443 -mode both
 ```
 
 ### TLS Testing
@@ -79,8 +73,6 @@ GOOS=linux GOARCH=amd64 go build -o mmdebug-linux-amd64 .
 | Mode | Description |
 |------|-------------|
 | `tcp` | TCP connection test |
-| `udp` | UDP connection test |
-| `both` | Both TCP and UDP tests |
 | `tls` | TLS handshake with certificate validation |
 | `tls-insecure` | TLS handshake without certificate validation |
 | `tls-sni` | TLS handshake with custom SNI |
