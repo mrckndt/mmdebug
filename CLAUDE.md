@@ -41,6 +41,7 @@ GOOS=linux GOARCH=amd64 go build -o mmdebug-linux-amd64 .
 ## Dependencies & code which is being used otherwise
 - OpenSSL for taking inspiration on TLS handshake tests, not a dependency on its own - https://github.com/openssl/openssl
 - profcs for everything related to `/proc` on Linux - https://github.com/prometheus/procfs
+- sys/unix for Ulimits - golang.org/x/sys/unix
 - go-pretty for drawing tables, coloring text/output, showing progress and listing file trees - https://github.com/jedib0t/go-pretty
 
 ## Documentation
