@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -219,8 +218,8 @@ func GetUlimits() ([]ulimitInfo, error) {
 
 
 	for _, config := range configs {
-		var limit syscall.Rlimit
-		if err := syscall.Getrlimit(config.Resource, &limit); err != nil {
+		var limit unix.Rlimit
+		if err := unix.Getrlimit(config.Resource, &limit); err != nil {
 			continue
 		}
 
